@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="de.fhg.igd.equinox.test.feature"
+      label="Test Runner Application Feature"
+      version="1.0.0.qualifier"
+      provider-name="Fraunhofer IGD">
+
+   <description>
+      Equinox application that launches Unit Tests within the running OSGi framework.
+   </description>
+
+   <copyright>
+      Copyright 2014 Fraunhofer IGD
+   </copyright>
+
+   <license url="http://www.apache.org/licenses">
+      Apache License 2.0
+   </license>
+
+   <requires>
+      <import plugin="org.eclipse.equinox.app" version="1.3.200" match="greaterOrEqual"/>
+      <import plugin="org.junit"/>
+      <import plugin="org.eclipse.osgi"/>
+   </requires>
+
+   <plugin
+         id="de.fhg.igd.equinox.test.app"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+         
+   <plugin
+         id="de.fhg.igd.equinox.test.app.source"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
