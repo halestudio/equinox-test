@@ -89,7 +89,8 @@ public class TestRunner {
 				TestExecutor exec = new TestExecutor(rl);
 				exec.executeTests(testClasses, failures);
 			} catch (IOException e) {
-				throw new IllegalStateException("Failed to write test results to output file " + outputFile.getAbsolutePath(), e);
+				throw new IllegalStateException("Failed to write test results to output file " + 
+						outputFile.getAbsolutePath(), e);
 			}
 		}
 		
@@ -120,18 +121,17 @@ public class TestRunner {
 	 */
 	private Collection<? extends Class<?>> findTestClasses(Bundle bundle) {
 		List<Class<?>> testClasses = new ArrayList<>();
-		
-		BundleWiring bw = bundle.adapt(BundleWiring.class);
-		
+
 		Enumeration<URL> entries = bundle.findEntries("/", "*Test.class", true);
 		if (entries != null) {
 			while (entries.hasMoreElements()) {
 				URL resource = entries.nextElement();
-				
+
 				// determine class name
 				String resourcePath = resource.getPath();
 				if (!resourcePath.startsWith("/target/")) {
-					String className = resourcePath.substring(0, resourcePath.length() - 6).replaceAll("/", ".");
+					String className = resourcePath.substring(0,
+							resourcePath.length() - 6).replaceAll("/", ".");
 					if (className.startsWith(".")) {
 						className = className.substring(1);
 					}
@@ -139,46 +139,78 @@ public class TestRunner {
 						className = className.substring(4);
 					}
 					try {
-						Class<?> testClass = null;
-						if (bw != null) {
-							if (bw.getClassLoader() != null) {
-								testClass = bw.getClassLoader().loadClass(className);
-							}
-							else {
-								// most likely a fragment
-								List<BundleWire> hosts = bw.getRequiredWires(BundleRevision.HOST_NAMESPACE);
-								if (hosts != null) {
-									for (BundleWire host : hosts) {
-										try {
-											testClass = host.getProviderWiring().getClassLoader().loadClass(className);
-											break;
-										} catch (Exception e) {
-											// ignore
-										}
-									}
-								}
-							}
-						} else {
-							testClass = bundle.loadClass(className);
-						}
-						if (testClass == null) {
-							throw new ClassNotFoundException(MessageFormat.format("Failed to load class {0}", className));
-						}
-						
+						Class<?> testClass = loadClass(bundle, className);
+
 						int modifiers = testClass.getModifiers();
-						if (!Modifier.isAbstract(modifiers) && Modifier.isPublic(modifiers)) {
-							// only accept non-abstract public classes as test classes
+						if (!Modifier.isAbstract(modifiers)
+								&& Modifier.isPublic(modifiers)) {
+							// only accept non-abstract public classes as test
+							// classes
 							testClasses.add(testClass);
 						}
 					} catch (ClassNotFoundException | NoClassDefFoundError e) {
-						log.severe(MessageFormat.format("Failed to load class {0}", className));
+						log.severe(MessageFormat.format(
+								"Failed to load class {0}", className));
 						failures.add(e);
 					}
 				}
 			}
 		}
-		
+
 		return testClasses;
+	}
+
+	/**
+	 * Load a class from a given bundle.
+	 * @param bundle the bundle
+	 * @param className the class name
+	 * @return the loaded class if found
+	 * @throws ClassNotFoundException if the class could not be found
+	 */
+	private Class<?> loadClass(Bundle bundle, String className)
+			throws ClassNotFoundException {
+		Class<?> testClass = null;
+		BundleWiring bw = bundle.adapt(BundleWiring.class);
+
+		if (bw != null) {
+			if (bw.getClassLoader() != null) {
+				testClass = bw.getClassLoader().loadClass(className);
+			} else {
+				// most likely a fragment
+				List<BundleWire> hosts = bw
+						.getRequiredWires(BundleRevision.HOST_NAMESPACE);
+				if (hosts != null && !hosts.isEmpty()) {
+					Exception lastE = null;
+					for (BundleWire host : hosts) {
+						try {
+							testClass = host.getProviderWiring()
+									.getClassLoader().loadClass(className);
+							break;
+						} catch (Exception e) {
+							lastE = e;
+						}
+					}
+					if (testClass == null) {
+						throw new ClassNotFoundException(MessageFormat.format(
+								"Failed to load class {0} from fragment hosts",
+								className), lastE);
+					}
+				} else {
+					throw new ClassNotFoundException(
+							MessageFormat
+									.format("Found no host bundle for fragment {1} to load class {0}",
+											className, bundle.getSymbolicName()));
+				}
+			}
+		} else {
+			testClass = bundle.loadClass(className);
+		}
+		if (testClass == null) {
+			throw new ClassNotFoundException(MessageFormat.format(
+					"Failed to load class {0}", className));
+		}
+
+		return testClass;
 	}
 	
 }
