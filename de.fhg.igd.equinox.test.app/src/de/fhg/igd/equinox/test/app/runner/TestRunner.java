@@ -29,11 +29,14 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.junit.runner.notification.RunListener;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
 import de.fhg.igd.equinox.test.app.TestRunnerConfig;
@@ -119,8 +122,12 @@ public class TestRunner {
 		List<Class<?>> testClasses = new ArrayList<>();
 		
 		BundleWiring bw = bundle.adapt(BundleWiring.class);
-		if (bw != null) {
-			for (URL resource : bw.findEntries("/", "*Test.class", BundleWiring.FINDENTRIES_RECURSE)) {
+		
+		Enumeration<URL> entries = bundle.findEntries("/", "*Test.class", true);
+		if (entries != null) {
+			while (entries.hasMoreElements()) {
+				URL resource = entries.nextElement();
+				
 				// determine class name
 				String resourcePath = resource.getPath();
 				if (!resourcePath.startsWith("/target/")) {
@@ -132,7 +139,32 @@ public class TestRunner {
 						className = className.substring(4);
 					}
 					try {
-						Class<?> testClass = bw.getClassLoader().loadClass(className);
+						Class<?> testClass = null;
+						if (bw != null) {
+							if (bw.getClassLoader() != null) {
+								testClass = bw.getClassLoader().loadClass(className);
+							}
+							else {
+								// most likely a fragment
+								List<BundleWire> hosts = bw.getRequiredWires(BundleRevision.HOST_NAMESPACE);
+								if (hosts != null) {
+									for (BundleWire host : hosts) {
+										try {
+											testClass = host.getProviderWiring().getClassLoader().loadClass(className);
+											break;
+										} catch (Exception e) {
+											// ignore
+										}
+									}
+								}
+							}
+						} else {
+							testClass = bundle.loadClass(className);
+						}
+						if (testClass == null) {
+							throw new ClassNotFoundException(MessageFormat.format("Failed to load class {0}", className));
+						}
+						
 						int modifiers = testClass.getModifiers();
 						if (!Modifier.isAbstract(modifiers) && Modifier.isPublic(modifiers)) {
 							// only accept non-abstract public classes as test classes
@@ -148,5 +180,5 @@ public class TestRunner {
 		
 		return testClasses;
 	}
-
+	
 }
