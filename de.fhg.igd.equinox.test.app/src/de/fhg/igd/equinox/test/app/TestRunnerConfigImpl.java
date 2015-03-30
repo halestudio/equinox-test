@@ -20,6 +20,8 @@
 package de.fhg.igd.equinox.test.app;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Mutable test runner configuration.
@@ -29,6 +31,8 @@ import java.io.File;
 public class TestRunnerConfigImpl implements TestRunnerConfig {
 
 	private File outputFile;
+	
+	private final Set<String> classPatterns = new HashSet<>();
 	
 	@Override
 	public File getOutputFile() {
@@ -40,6 +44,11 @@ public class TestRunnerConfigImpl implements TestRunnerConfig {
 	 */
 	public void setOutputFile(File outputFile) {
 		this.outputFile = outputFile;
+	}
+
+	@Override
+	public Set<String> getClassPatterns() {
+		return classPatterns;
 	}
 
 }

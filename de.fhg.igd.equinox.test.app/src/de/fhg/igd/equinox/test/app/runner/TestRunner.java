@@ -30,7 +30,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.junit.runner.notification.RunListener;
@@ -74,8 +77,7 @@ public class TestRunner {
 		
 		// step 1 - collect/select test classes
 		List<Class<?>> testClasses;
-		//TODO based on configuration
-		testClasses = allTestClasses();
+		testClasses = collectTestClasses();
 		
 		// step 2 - prepare executor & execute tests
 		File outputFile = config.getOutputFile();
@@ -101,11 +103,12 @@ public class TestRunner {
 	 * Determine test classes for all bundles.
 	 * @return the list of test classes
 	 */
-	private List<Class<?>> allTestClasses() {
+	private List<Class<?>> collectTestClasses() {
 		Bundle[] bundles = Activator.getContext().getBundles();
 		List<Class<?>> testClasses = new ArrayList<>();
 		
 		for (Bundle bundle : bundles) {
+			//TODO select bundles based on configuration
 			if (bundle.getSymbolicName().endsWith(".test")) {
 				testClasses.addAll(findTestClasses(bundle));
 			}
@@ -120,9 +123,24 @@ public class TestRunner {
 	 * @return the test classes contained in the bundle
 	 */
 	private Collection<? extends Class<?>> findTestClasses(Bundle bundle) {
-		List<Class<?>> testClasses = new ArrayList<>();
+		Set<Class<?>> testClasses = new LinkedHashSet<>();
 
-		Enumeration<URL> entries = bundle.findEntries("/", "*Test.class", true);
+		for (String pattern : config.getClassPatterns()) {
+			testClasses.addAll(collectTests(bundle, pattern));
+		}
+
+		return testClasses;
+	}
+
+	/**
+	 * Collect test classes in a specific bundle.
+	 * @param bundle the bundle to search for test classes
+	 * @param classPattern the class name pattern, use asterisk as wildcard
+	 * @return the collected test classes
+	 */
+	private Collection<Class<?>> collectTests(Bundle bundle, String classPattern) {
+		Set<Class<?>> testClasses = new HashSet<>();
+		Enumeration<URL> entries = bundle.findEntries("/", classPattern + ".class", true);
 		if (entries != null) {
 			while (entries.hasMoreElements()) {
 				URL resource = entries.nextElement();
@@ -156,7 +174,6 @@ public class TestRunner {
 				}
 			}
 		}
-
 		return testClasses;
 	}
 

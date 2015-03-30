@@ -31,7 +31,7 @@ and select the application `de.fhg.igd.equinox.test` as application on the Overv
 Add all bundles/features that contain the tests you want to execute to the product, as well as their dependencies
 and needed configuration (e.g. to start specific OSGi services).
 
-The application will by default execute all JUnit test classes that end with **Test** and are contained in a bundle
+The application will by default (if you don't specify any class patterns) execute all JUnit test classes that end with **Test** and are contained in a bundle
 or fragment that ends with **.test**.
 
 Launching
@@ -45,9 +45,16 @@ By default the application will print the test output and results to the console
 Configuration
 -------------
 
-Currently the output path for the test report (see above) is the only configuration option.
+Following are the configuration options you can provide to the launcher:
+
+* `-out <path-to-file>` - write a test results XML file
+* `-class <pattern>` - add a class name pattern for tests to run (allows asterisk as wild card, e.g. `*MyTest`)
+* `-unit` - adds the default pattern for unit tests (`*Test`)
+* `-integration` - adds the default pattern for integration tests (`*IT`)
+
+Currently these are the only configuration options.
 This works well for us as we rely on the convention of test class and bundle names.
-In the future additional options might be added, e.g. for only executing a specific test.
+In the future additional options might be added, e.g. for only executing a specific test or bundle.
 Suggestions (or pull requests) are welcome!
 
 Build

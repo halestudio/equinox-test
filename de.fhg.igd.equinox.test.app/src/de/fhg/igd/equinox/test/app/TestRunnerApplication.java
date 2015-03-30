@@ -41,12 +41,34 @@ public class TestRunnerApplication extends AbstractApplication<TestRunnerConfigI
 		case "-out":
 			executionContext.setOutputFile(new File(value));
 			break;
+		case "-class":
+			// custom class pattern
+			executionContext.getClassPatterns().add(value);
+			break;
+		}
+	}
+
+	@Override
+	protected void processFlag(String arg, TestRunnerConfigImpl executionContext) {
+		switch(arg) {
+		case "-unit":
+			// unit test pattern
+			executionContext.getClassPatterns().add("*Test");
+			break;
+		case "-integration":
+			// integration test pattern
+			executionContext.getClassPatterns().add("*IT");
+			break;
 		}
 	}
 
 	@Override
 	protected Object run(TestRunnerConfigImpl executionContext,
 			IApplicationContext appContext) {
+		if (executionContext.getClassPatterns().isEmpty()) {
+			// by default execute tests with Unit test pattern
+			executionContext.getClassPatterns().add("*Test");
+		}
 		new TestRunner(executionContext).execute();
 		return IApplication.EXIT_OK;
 	}

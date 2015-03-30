@@ -32,5 +32,11 @@ public interface TestRunnerConfig {
 	 * @return the file to write the test results to
 	 */
 	File getOutputFile();
+	
+	/**
+	 * @return the class name pattern for test classes to execute (use asterisk
+	 * as wildcard)
+	 */
+	Iterable<String> getClassPatterns();
 
 }
