@@ -29,6 +29,8 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
+import de.fhg.igd.equinox.test.app.extension.RunListenerExtension;
+import de.fhg.igd.equinox.test.app.extension.RunListenerFactory;
 import de.fhg.igd.equinox.test.app.runner.util.ExtendedComputer;
 import de.fhg.igd.equinox.test.app.runner.util.ListenerFactory;
 
@@ -83,6 +85,18 @@ public class TestExecutor {
 		JUnitCore junit = new JUnitCore();
 		if (listener != null) {
 			junit.addListener(listener);
+		}
+		
+		// add additional listeners registered in extension point
+		for (RunListenerFactory factory : RunListenerExtension.getInstance().getFactories()) {
+			System.out.println("Adding test run listener " + factory.getIdentifier());
+			try {
+				RunListener listener = factory.createExtensionObject();
+				junit.addListener(listener);
+			} catch (Exception e) {
+				System.out.println("Initialising test run listener failed");
+				e.printStackTrace();
+			}
 		}
 		
 		List<String> errors = new ArrayList<String>();
