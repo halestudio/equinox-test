@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension-point id="de.fhg.igd.equinox.test.listeners" name="JUnit Test Run Listeners" schema="schema/de.fhg.igd.equinox.test.listeners.exsd"/>
    <extension
          id="de.fhg.igd.equinox.test"
          point="org.eclipse.core.runtime.applications">

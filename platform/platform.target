@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?pde version="3.8"?><target name="platform" sequenceNumber="5">
+<?pde version="3.8"?><target name="platform" sequenceNumber="7">
 <locations>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.sdk.ide" version="4.4.0.I20140606-1215"/>
 <repository location="http://download.eclipse.org/eclipse/updates/4.4"/>
+</location>
+<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
+<unit id="de.fhg.igd.eclipse.util.feature.feature.group" version="1.0.0.201407081822"/>
+<repository location="http://build-artifacts.wetransform.to/p2/eclipse-util/import"/>
+</location>
+<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="slicer" includeSource="true" type="InstallableUnit">
+<unit id="platform.shared.slf4jlogback.feature.group" version="1.7.10.i20170105"/>
+<repository location="https://gitlab.wetransform.to/hale/hale-build-support/raw/7eccd129f869cb3568ebd9f0c717df1f616ea36e/updatesites/platform"/>
 </location>
 </locations>
 </target>
