@@ -34,6 +34,10 @@ public class TestRunnerConfigImpl implements TestRunnerConfig {
 	
 	private final Set<String> classPatterns = new HashSet<>();
 	
+	private final Set<String> bundles = new HashSet<>();
+	
+	private final Set<String> methodNames = new HashSet<>();
+	
 	@Override
 	public File getOutputFile() {
 		return outputFile;
@@ -49,6 +53,16 @@ public class TestRunnerConfigImpl implements TestRunnerConfig {
 	@Override
 	public Set<String> getClassPatterns() {
 		return classPatterns;
+	}
+
+	@Override
+	public Set<String> getBundles() {
+		return bundles;
+	}
+
+	@Override
+	public Set<String> getMethodNames() {
+		return methodNames;
 	}
 
 }

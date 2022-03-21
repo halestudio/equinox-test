@@ -45,6 +45,14 @@ public class TestRunnerApplication extends AbstractApplication<TestRunnerConfigI
 			// custom class pattern
 			executionContext.getClassPatterns().add(value);
 			break;
+		case "-bundle":
+			// limit to specific bundles
+			executionContext.getBundles().add(value);
+			break;
+		case "-method":
+			// limit to specific methods
+			executionContext.getMethodNames().add(value);
+			break;
 		}
 	}
 

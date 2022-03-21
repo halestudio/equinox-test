@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.text.MessageFormat;
@@ -35,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import org.junit.runner.notification.RunListener;
 import org.osgi.framework.Bundle;
@@ -42,8 +44,10 @@ import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
+import de.fhg.igd.equinox.test.app.TestClassAndMethods;
 import de.fhg.igd.equinox.test.app.TestRunnerConfig;
 import de.fhg.igd.equinox.test.app.internal.Activator;
+import de.fhg.igd.equinox.test.app.runner.util.GlobUtil;
 import de.fhg.igd.equinox.test.app.runner.util.XmlRunListener;
 
 /**
@@ -83,13 +87,13 @@ public class TestRunner {
 		File outputFile = config.getOutputFile();
 		if (outputFile == null) {
 			TestExecutor exec = new TestExecutor();
-			exec.executeTests(testClasses, failures);
+			runTests(exec, testClasses);
 		}
 		else {
 			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) { 
 				RunListener rl = new XmlRunListener(out);
 				TestExecutor exec = new TestExecutor(rl);
-				exec.executeTests(testClasses, failures);
+				runTests(exec, testClasses);
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to write test results to output file " + 
 						outputFile.getAbsolutePath(), e);
@@ -100,6 +104,59 @@ public class TestRunner {
 	}
 
 	/**
+	 * Run tests for the given test classes.
+	 * 
+	 * @param exec the test executor
+	 * @param testClasses the test classes
+	 */
+	private void runTests(TestExecutor exec, List<Class<?>> testClasses) {
+		if (config.getMethodNames().isEmpty()) {
+			// run all test classes and their tests
+			exec.executeTests(testClasses, failures);
+		}
+		else {
+			// determine methods for classes
+			
+			List<TestClassAndMethods> tests = new ArrayList<TestClassAndMethods>();
+			for (Class<?> testClass : testClasses) {
+				Collection<String> methods = findTestMethods(testClass);
+				if (methods != null && !methods.isEmpty()) {
+					tests.add(new TestClassAndMethods(testClass, methods));
+				}
+			}
+			
+			exec.executeTests(tests);
+		}
+	}
+
+	/**
+	 * Determine the tests methods to run for a given test class.
+	 * 
+	 * @param testClass the test class
+	 * @return the test methods to run or <code>null</code>
+	 */
+	private Collection<String> findTestMethods(Class<?> testClass) {
+		if (testClass == null || config.getMethodNames().isEmpty()) {
+			return null;
+		}
+		
+		Set<String> methodNames = new HashSet<String>();
+		
+		for (Method method : testClass.getMethods()) {
+			//TODO check if method may be a valid test method?
+			// for now assume users only specify valid methods
+			
+			//TODO also allow specifying glob or regex patterns?
+			// for now the full name must be specified
+			if (config.getMethodNames().contains(method.getName())) {
+				methodNames.add(method.getName());
+			}
+		}
+		
+		return methodNames;
+	}
+
+	/**
 	 * Determine test classes for all bundles.
 	 * @return the list of test classes
 	 */
@@ -107,10 +164,21 @@ public class TestRunner {
 		Bundle[] bundles = Activator.getContext().getBundles();
 		List<Class<?>> testClasses = new ArrayList<>();
 		
+		
 		for (Bundle bundle : bundles) {
-			//TODO select bundles based on configuration
-			if (bundle.getSymbolicName().endsWith(".test")) {
-				testClasses.addAll(findTestClasses(bundle));
+			if (config.getBundles().isEmpty()) {
+				// use default test bundles (end on .test)
+				if (bundle.getSymbolicName().endsWith(".test")) {
+					testClasses.addAll(findTestClasses(bundle));
+				}
+			}
+			else {
+				//TODO also allow specifying glob or regex patterns?
+				// for now the full name must be specified
+				
+				if (config.getBundles().contains(bundle.getSymbolicName())) {
+					testClasses.addAll(findTestClasses(bundle));
+				}
 			}
 		}
 		
@@ -140,7 +208,22 @@ public class TestRunner {
 	 */
 	private Collection<Class<?>> collectTests(Bundle bundle, String classPattern) {
 		Set<Class<?>> testClasses = new HashSet<>();
-		Enumeration<URL> entries = bundle.findEntries("/", classPattern + ".class", true);
+		
+		// replace dots by slash to allow package identification
+		int lastDot = classPattern.lastIndexOf('.');
+		String pkg = null;
+		if (lastDot >= 0) {
+			pkg = classPattern.substring(0, lastDot);
+			classPattern = (lastDot + 1 == classPattern.length()) ? null : classPattern.substring(lastDot + 1);
+		}
+		if (classPattern != null) {
+			classPattern = classPattern + ".class";
+		}
+		else {
+			classPattern = "*.class";
+		}
+		
+		Enumeration<URL> entries = bundle.findEntries("/", classPattern, true);
 		if (entries != null) {
 			while (entries.hasMoreElements()) {
 				URL resource = entries.nextElement();
@@ -158,14 +241,23 @@ public class TestRunner {
 					}
 					try {
 						Class<?> testClass = loadClass(bundle, className);
-
-						int modifiers = testClass.getModifiers();
-						if (!Modifier.isAbstract(modifiers)
-								&& Modifier.isPublic(modifiers)) {
-							// only accept non-abstract public classes as test
-							// classes
-							testClasses.add(testClass);
+						
+						boolean reject = false;
+						
+						if (pkg != null && !pkg.isEmpty()) {
+							reject = !matchPackage(pkg, testClass.getPackage().getName());
 						}
+
+						if (!reject) {
+							int modifiers = testClass.getModifiers();
+							if (!Modifier.isAbstract(modifiers)
+									&& Modifier.isPublic(modifiers)) {
+								// only accept non-abstract public classes as test
+								// classes
+								testClasses.add(testClass);
+							}
+						}
+						
 					} catch (ClassNotFoundException | NoClassDefFoundError e) {
 						log.severe(MessageFormat.format(
 								"Failed to load class {0}", className));
@@ -175,6 +267,18 @@ public class TestRunner {
 			}
 		}
 		return testClasses;
+	}
+
+	/**
+	 * Match a package pattern against a package.
+	 * 
+	 * @param pkgGlobPattern the package glob pattern
+	 * @param pkg the package to match
+	 * @return if the package matches the pattern
+	 */
+	private boolean matchPackage(String pkgGlobPattern, String pkg) {
+		String regex = GlobUtil.convertGlobToRegex(pkgGlobPattern);
+		return Pattern.matches(regex, pkg);
 	}
 
 	/**

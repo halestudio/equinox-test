@@ -25,10 +25,12 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.runner.JUnitCore;
+import org.junit.runner.Request;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
+import de.fhg.igd.equinox.test.app.TestClassAndMethods;
 import de.fhg.igd.equinox.test.app.extension.RunListenerExtension;
 import de.fhg.igd.equinox.test.app.extension.RunListenerFactory;
 import de.fhg.igd.equinox.test.app.runner.util.ExtendedComputer;
@@ -72,10 +74,7 @@ public class TestExecutor {
 	/**
 	 * Execute the tests specified by the given class names
 	 * 
-	 * @param testClasses the test classes. The map's key is the
-	 * full-qualified name of the test class, and the value is the symbolic
-	 * name of the bundle where the test class can be loaded. The value may
-	 * be null, if the bundle is unknown.
+	 * @param testClasses the test classes
 	 * @param additionalFailures throwables representing additional failures
 	 * to report
 	 * 
@@ -107,6 +106,60 @@ public class TestExecutor {
 		for (Failure failure : result.getFailures()) {
 			errors.add(failure.toString());
 		}
+		
+		System.out.println(">");
+		System.out.println("> Completed executing tests from " + testClasses.size() + " test classes");
+		System.out.println(">");
+		
+		return errors;
+	}
+	
+	/**
+	 * Execute the tests specified by the given test classes and method names
+	 * 
+	 * @param testClasses the test classes with the associated test methods to run
+	 * 
+	 * @return the list of errors
+	 */
+	public List<String> executeTests(Collection<TestClassAndMethods> testClasses) {
+		JUnitCore junit = new JUnitCore();
+		if (listener != null) {
+			junit.addListener(listener);
+		}
+		
+		// add additional listeners registered in extension point
+		for (RunListenerFactory factory : RunListenerExtension.getInstance().getFactories()) {
+			System.out.println("Adding test run listener " + factory.getIdentifier());
+			try {
+				RunListener listener = factory.createExtensionObject();
+				junit.addListener(listener);
+			} catch (Exception e) {
+				System.out.println("Initialising test run listener failed");
+				e.printStackTrace();
+			}
+		}
+		
+		List<String> errors = new ArrayList<String>();
+		
+		// run test class methods
+		int methCount = 0;
+		for (TestClassAndMethods testClass : testClasses) {
+			for (String method : testClass.getTestMethods()) {
+				System.out.println(">");
+				System.out.println("> Running test method " + testClass.getTestClass().getName() + "#" + method);
+				System.out.println(">");
+				
+				methCount++;
+				Result result = junit.run( Request.method(testClass.getTestClass(), method) );
+				for (Failure failure : result.getFailures()) {
+					errors.add(failure.toString());
+				}
+			}
+		}
+		
+		System.out.println(">");
+		System.out.println("> Completed executing tests from " + methCount + " test methods");
+		System.out.println(">");
 		
 		return errors;
 	}
