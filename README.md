@@ -48,7 +48,9 @@ Configuration
 Following are the configuration options you can provide to the launcher:
 
 * `-out <path-to-file>` - write a test results XML file
+* `-bundle <bundle-symbolic-name>` - add a bundle to search for test classes in (if none is specified then all bundles are searched)
 * `-class <pattern>` - add a class name pattern for tests to run (allows asterisk as wild card, e.g. `*MyTest`)
+* `-method <method-name>` - add a test method to run in test classes - if specified only the given methods are run in test classes
 * `-unit` - adds the default pattern for unit tests (`*Test`)
 * `-integration` - adds the default pattern for integration tests (`*IT`)
 

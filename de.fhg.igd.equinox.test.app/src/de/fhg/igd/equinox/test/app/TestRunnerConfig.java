@@ -20,6 +20,7 @@
 package de.fhg.igd.equinox.test.app;
 
 import java.io.File;
+import java.util.Collection;
 
 /**
  * Test runner configuration interface.
@@ -38,5 +39,15 @@ public interface TestRunnerConfig {
 	 * as wildcard)
 	 */
 	Iterable<String> getClassPatterns();
+	
+	/**
+	 * @return the names of the specific bundles to run test classes for, or empty
+	 */
+	Collection<String> getBundles();
+	
+	/**
+	 * @return the names of specific test methods to run, or empty 
+	 */
+	Collection<String> getMethodNames();
 
 }
