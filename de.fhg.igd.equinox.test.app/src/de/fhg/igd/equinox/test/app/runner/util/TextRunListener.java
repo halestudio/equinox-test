@@ -90,5 +90,7 @@ public class TextRunListener extends RunListener {
 			_out.print(f.getTrace());
 			++c;
 		}
+		
+		_out.flush();
 	}
 }
