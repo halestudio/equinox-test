@@ -92,15 +92,16 @@ public class TestRunner {
 		
 		// step 2 - prepare executor & execute tests
 		File outputFile = config.getOutputFile();
+		int failures = -1;
 		if (outputFile == null) {
 			TestExecutor exec = new TestExecutor(ListenerFactory.PLAIN, out);
-			runTests(exec, testClasses, out);
+			failures = runTests(exec, testClasses, out);
 		}
 		else {
 			try (OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) { 
 				RunListener rl = new XmlRunListener(fileOut);
 				TestExecutor exec = new TestExecutor(rl);
-				runTests(exec, testClasses, out);
+				failures = runTests(exec, testClasses, out);
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to write test results to output file " + 
 						outputFile.getAbsolutePath(), e);
@@ -108,6 +109,15 @@ public class TestRunner {
 		}
 		
 		log.info("Test runner completed.");
+		if (failures == 0) {
+			log.info("No test failures were reported.");
+		}
+		else if (failures > 0) {
+			log.info(failures +  " test failures were reported.");
+		}
+		else {
+			log.warning("Could not determine number of test failures");
+		}
 	}
 
 	/**
@@ -116,10 +126,11 @@ public class TestRunner {
 	 * @param exec the test executor
 	 * @param testClasses the test classes
 	 */
-	private void runTests(TestExecutor exec, List<Class<?>> testClasses, PrintStream outStream) {
+	private int runTests(TestExecutor exec, List<Class<?>> testClasses, PrintStream outStream) {
 		if (config.getMethodNames().isEmpty()) {
 			// run all test classes and their tests
-			exec.executeTests(testClasses, failures, outStream);
+			List<String> errors = exec.executeTests(testClasses, failures, outStream);
+			return errors.size();
 		}
 		else {
 			// determine methods for classes
@@ -132,7 +143,8 @@ public class TestRunner {
 				}
 			}
 			
-			exec.executeTests(tests, outStream);
+			List<String> errors = exec.executeTests(tests, outStream);
+			return errors.size();
 		}
 	}
 
