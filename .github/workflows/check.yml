@@ -1,0 +1,30 @@
+name: Check
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Maven
+      uses: s4u/setup-maven-action@v1.7.0
+      with:
+        java-version: 8
+        java-distribution: temurin
+        maven-version: 3.6.3
+      
+    - name: Maven
+      # Additional args to work around Github Runner issue (on Azure)
+      # see https://github.com/actions/runner-images/issues/1499#issuecomment-689467080
+      run: mvn clean install -Dmaven.test.failure.ignore=true -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+      
+      # https://github.com/marketplace/actions/junit-report-action
+      # Note: Currently no tests
+    # - name: Publish Test Report
+    #   uses: mikepenz/action-junit-report@v3
+    #   if: always() # always run even if the previous step fails
+    #   with:
+    #     report_paths: '*/target/surefire-reports/*.xml'
