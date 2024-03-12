@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -48,6 +49,7 @@ import de.fhg.igd.equinox.test.app.TestClassAndMethods;
 import de.fhg.igd.equinox.test.app.TestRunnerConfig;
 import de.fhg.igd.equinox.test.app.internal.Activator;
 import de.fhg.igd.equinox.test.app.runner.util.GlobUtil;
+import de.fhg.igd.equinox.test.app.runner.util.ListenerFactory;
 import de.fhg.igd.equinox.test.app.runner.util.XmlRunListener;
 
 /**
@@ -83,17 +85,22 @@ public class TestRunner {
 		List<Class<?>> testClasses;
 		testClasses = collectTestClasses();
 		
+		/*
+		 * Use error stream by default in case someone messes with System.out (e.g. closes the stream).
+		 */
+		PrintStream out = System.err;
+		
 		// step 2 - prepare executor & execute tests
 		File outputFile = config.getOutputFile();
 		if (outputFile == null) {
-			TestExecutor exec = new TestExecutor();
-			runTests(exec, testClasses);
+			TestExecutor exec = new TestExecutor(ListenerFactory.PLAIN, out);
+			runTests(exec, testClasses, out);
 		}
 		else {
-			try (OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) { 
-				RunListener rl = new XmlRunListener(out);
+			try (OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFile))) { 
+				RunListener rl = new XmlRunListener(fileOut);
 				TestExecutor exec = new TestExecutor(rl);
-				runTests(exec, testClasses);
+				runTests(exec, testClasses, out);
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to write test results to output file " + 
 						outputFile.getAbsolutePath(), e);
@@ -109,10 +116,10 @@ public class TestRunner {
 	 * @param exec the test executor
 	 * @param testClasses the test classes
 	 */
-	private void runTests(TestExecutor exec, List<Class<?>> testClasses) {
+	private void runTests(TestExecutor exec, List<Class<?>> testClasses, PrintStream outStream) {
 		if (config.getMethodNames().isEmpty()) {
 			// run all test classes and their tests
-			exec.executeTests(testClasses, failures);
+			exec.executeTests(testClasses, failures, outStream);
 		}
 		else {
 			// determine methods for classes
@@ -125,7 +132,7 @@ public class TestRunner {
 				}
 			}
 			
-			exec.executeTests(tests);
+			exec.executeTests(tests, outStream);
 		}
 	}
 

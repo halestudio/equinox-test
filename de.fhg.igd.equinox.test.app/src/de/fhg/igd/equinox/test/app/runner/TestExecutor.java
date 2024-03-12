@@ -20,6 +20,7 @@
 package de.fhg.igd.equinox.test.app.runner;
 
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -80,7 +81,7 @@ public class TestExecutor {
 	 * 
 	 * @return the list of errors
 	 */
-	public List<String> executeTests(Collection<Class<?>> testClasses, Collection<Throwable> additionalFailures) {
+	public List<String> executeTests(Collection<Class<?>> testClasses, Collection<Throwable> additionalFailures, PrintStream outStream) {
 		JUnitCore junit = new JUnitCore();
 		if (listener != null) {
 			junit.addListener(listener);
@@ -88,13 +89,13 @@ public class TestExecutor {
 		
 		// add additional listeners registered in extension point
 		for (RunListenerFactory factory : RunListenerExtension.getInstance().getFactories()) {
-			System.out.println("Adding test run listener " + factory.getIdentifier());
+			outStream.println("Adding test run listener " + factory.getIdentifier());
 			try {
 				RunListener listener = factory.createExtensionObject();
 				junit.addListener(listener);
 			} catch (Exception e) {
-				System.out.println("Initialising test run listener failed");
-				e.printStackTrace();
+				outStream.println("Initialising test run listener failed");
+				e.printStackTrace(outStream);
 			}
 		}
 		
@@ -107,10 +108,11 @@ public class TestExecutor {
 			errors.add(failure.toString());
 		}
 		
-		System.out.println(">");
-		System.out.println("> Completed executing tests from " + testClasses.size() + " test classes");
-		System.out.println(">");
+		outStream.println(">");
+		outStream.println("> Completed executing tests from " + testClasses.size() + " test classes");
+		outStream.println(">");
 		
+		// Note: Collected errors are currently not used
 		return errors;
 	}
 	
@@ -121,7 +123,7 @@ public class TestExecutor {
 	 * 
 	 * @return the list of errors
 	 */
-	public List<String> executeTests(Collection<TestClassAndMethods> testClasses) {
+	public List<String> executeTests(Collection<TestClassAndMethods> testClasses, PrintStream outStream) {
 		JUnitCore junit = new JUnitCore();
 		if (listener != null) {
 			junit.addListener(listener);
@@ -129,13 +131,13 @@ public class TestExecutor {
 		
 		// add additional listeners registered in extension point
 		for (RunListenerFactory factory : RunListenerExtension.getInstance().getFactories()) {
-			System.out.println("Adding test run listener " + factory.getIdentifier());
+			outStream.println("Adding test run listener " + factory.getIdentifier());
 			try {
 				RunListener listener = factory.createExtensionObject();
 				junit.addListener(listener);
 			} catch (Exception e) {
-				System.out.println("Initialising test run listener failed");
-				e.printStackTrace();
+				outStream.println("Initialising test run listener failed");
+				e.printStackTrace(outStream);
 			}
 		}
 		
@@ -145,9 +147,9 @@ public class TestExecutor {
 		int methCount = 0;
 		for (TestClassAndMethods testClass : testClasses) {
 			for (String method : testClass.getTestMethods()) {
-				System.out.println(">");
-				System.out.println("> Running test method " + testClass.getTestClass().getName() + "#" + method);
-				System.out.println(">");
+				outStream.println(">");
+				outStream.println("> Running test method " + testClass.getTestClass().getName() + "#" + method);
+				outStream.println(">");
 				
 				methCount++;
 				Result result = junit.run( Request.method(testClass.getTestClass(), method) );
@@ -157,10 +159,11 @@ public class TestExecutor {
 			}
 		}
 		
-		System.out.println(">");
-		System.out.println("> Completed executing tests from " + methCount + " test methods");
-		System.out.println(">");
+		outStream.println(">");
+		outStream.println("> Completed executing tests from " + methCount + " test methods");
+		outStream.println(">");
 		
+		// Note: Collected errors are currently not used
 		return errors;
 	}
 	
