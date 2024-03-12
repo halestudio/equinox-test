@@ -10,7 +10,7 @@ jobs:
 
     steps:
     - name: Setup Maven
-      uses: s4u/setup-maven-action@v1.7.0
+      uses: s4u/setup-maven-action@94605e0cdfe442da48d603db22bbf4c7d203c076 # v1.7.0
       with:
         java-version: 8
         java-distribution: temurin
@@ -22,7 +22,7 @@ jobs:
       run: mvn clean install -Dmaven.test.failure.ignore=true -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
 
     - name: Install AWS CLI
-      uses: unfor19/install-aws-cli-action@v1
+      uses: unfor19/install-aws-cli-action@e8b481e524a99f37fbd39fdc1dcb3341ab091367 # v1
       with:
         version: 1
 
