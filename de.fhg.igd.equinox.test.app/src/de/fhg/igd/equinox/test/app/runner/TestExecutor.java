@@ -112,7 +112,6 @@ public class TestExecutor {
 		outStream.println("> Completed executing tests from " + testClasses.size() + " test classes");
 		outStream.println(">");
 		
-		// Note: Collected errors are currently not used
 		return errors;
 	}
 	
@@ -163,7 +162,6 @@ public class TestExecutor {
 		outStream.println("> Completed executing tests from " + methCount + " test methods");
 		outStream.println(">");
 		
-		// Note: Collected errors are currently not used
 		return errors;
 	}
 	
