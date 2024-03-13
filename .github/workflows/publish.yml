@@ -30,7 +30,8 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.BUILD_ARCHIVE_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.BUILD_ARCHIVE_SECRET_KEY }}
+      # use commit sha as version for update site as long as there is no proper version management for the feature and bundles
       run: |
-        VERSION=$(cat version.txt | head -1)
+        VERSION=${{ github.sha }}
         aws s3 sync de.fhg.igd.equinox.test.site/target/repository/ s3://build-artifacts.wetransform.to/p2/equinox-test/$VERSION --acl public-read --delete --region eu-central-1
       shell: bash
